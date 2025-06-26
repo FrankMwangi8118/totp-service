@@ -13,10 +13,9 @@ A Spring Boot application that implements **Two-Factor Authentication (2FA)** us
 
 ### Run the App
 
-
-git clone https://github.com/your-username/your-project.git
-cd your-project
-./mvnw spring-boot:run
+- clone the repo
+- cd your-project
+- ./mvnw spring-boot:run
 ---
 ### 🛠️ How It Works
 
