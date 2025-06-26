@@ -13,7 +13,7 @@ A Spring Boot application that implements **Two-Factor Authentication (2FA)** us
 
 ### Run the App
 
-```bash
+
 git clone https://github.com/your-username/your-project.git
 cd your-project
 ./mvnw spring-boot:run
