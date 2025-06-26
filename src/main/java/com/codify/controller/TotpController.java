@@ -37,7 +37,7 @@ log.debug("url{}",qrUrl);
         return ResponseEntity.ok(response);
     }
 
-    @PostMapping(value = "/auth", consumes = "application/json")
+    @PostMapping(value = "/login", consumes = "application/json")
     public ResponseEntity<?> validateTotp(@RequestBody LoginDto loginDto) {
 
         boolean isValid = totpService.isValid( loginDto.secretKey(),loginDto.totpCode());

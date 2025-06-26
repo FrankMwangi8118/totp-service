@@ -17,13 +17,16 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.net.Authenticator;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
 
 @Slf4j
 @Service
 public class TotpServiceImpl implements TotpService {
-    private static final String ISSUER = "mwas3";
+    private static final String ISSUER = "coditApp";
 
     @Override
     public String generateTotpSecretKey() {
@@ -34,11 +37,12 @@ public class TotpServiceImpl implements TotpService {
 
     @Override
     public String generateQrUrl(String username, String secretKey) {
-        String url = GoogleAuthenticatorQRGenerator.getOtpAuthURL(
-                ISSUER,
-                username,
-                new GoogleAuthenticatorKey.Builder(secretKey).build());
-        log.info("qr_url{}", url);
+         String url=String.format("otpauth://totp/%s:%s?secret=%s&issuer=%s&algorithm=SHA1&digits=6&period=30",
+                 URLEncoder.encode(ISSUER,StandardCharsets.UTF_8),
+                 URLEncoder.encode(username, StandardCharsets.UTF_8),
+                 secretKey,
+                 URLEncoder.encode(ISSUER, StandardCharsets.UTF_8)
+                 );
         try {
             return generateQrCode(url);
         } catch (Exception e) {
@@ -48,32 +52,29 @@ public class TotpServiceImpl implements TotpService {
     }
 
     @Override
-    public String generateQrCode(String qrUrl) {
-
+    public String generateQrCode(String qrContent) {
         try {
-
             QRCodeWriter qrCodeWriter = new QRCodeWriter();
-            Map<EncodeHintType, Object> hints = new HashMap<EncodeHintType, Object>();
+            Map<EncodeHintType, Object> hints = new HashMap<>();
             hints.put(EncodeHintType.CHARACTER_SET, "UTF-8");
-            BitMatrix bitMatrix = qrCodeWriter.encode(qrUrl, BarcodeFormat.QR_CODE, 300, 300, hints);
-            BufferedImage image = MatrixToImageWriter.toBufferedImage(bitMatrix);
+            hints.put(EncodeHintType.MARGIN, 1);
 
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            BitMatrix bitMatrix = qrCodeWriter.encode(
+                    qrContent, BarcodeFormat.QR_CODE, 400, 400, hints);
+            BufferedImage qrImage = MatrixToImageWriter.toBufferedImage(bitMatrix);
 
-            File dir = new File("./", "qr");
-            if (!dir.exists()) {
-                dir.mkdirs();
-            }
-            File outPut = new File(dir + "qr.png");
-            ImageIO.write(image, "png", outPut);
-            log.info("qr_path:{}", outPut.getAbsolutePath());
-            return outPut.getAbsolutePath();
+            File output = new File("./qrcodes.png");
+            ImageIO.write(qrImage, "png", output);
+            log.info("QR code saved to: {}", output.getAbsolutePath());
+
+            return output.getAbsolutePath();
 
         } catch (Exception e) {
-            log.error("Failed to generate QR code", e);
-            throw new RuntimeException("Failed to generate QR code", e);
+            throw new RuntimeException("QR code generation failed", e);
         }
     }
+
+
 
     @Override
     public boolean isValid(String secretKey, int code) {
