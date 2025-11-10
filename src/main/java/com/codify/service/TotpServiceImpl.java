@@ -8,18 +8,16 @@ import com.google.zxing.qrcode.QRCodeWriter;
 import com.warrenstrange.googleauth.GoogleAuthenticator;
 import com.warrenstrange.googleauth.GoogleAuthenticatorConfig;
 import com.warrenstrange.googleauth.GoogleAuthenticatorKey;
-import com.warrenstrange.googleauth.GoogleAuthenticatorQRGenerator;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
-import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.net.Authenticator;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -37,16 +35,16 @@ public class TotpServiceImpl implements TotpService {
 
     @Override
     public String generateQrUrl(String username, String secretKey) {
-         String url=String.format("otpauth://totp/%s:%s?secret=%s&issuer=%s&algorithm=SHA1&digits=6&period=30",
-                 URLEncoder.encode(ISSUER,StandardCharsets.UTF_8),
-                 URLEncoder.encode(username, StandardCharsets.UTF_8),
-                 secretKey,
-                 URLEncoder.encode(ISSUER, StandardCharsets.UTF_8)
-                 );
+        String url = String.format("otpauth://totp/%s:%s?secret=%s&issuer=%s&algorithm=SHA1&digits=6&period=30",
+                URLEncoder.encode(ISSUER, StandardCharsets.UTF_8),
+                URLEncoder.encode(username, StandardCharsets.UTF_8),
+                URLEncoder.encode(secretKey, StandardCharsets.UTF_8),
+                URLEncoder.encode(ISSUER, StandardCharsets.UTF_8)
+        );
         try {
             return generateQrCode(url);
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new ResponseStatusException(HttpStatusCode.valueOf(400), "ann error occurred");
 
         }
     }
@@ -59,8 +57,13 @@ public class TotpServiceImpl implements TotpService {
             hints.put(EncodeHintType.CHARACTER_SET, "UTF-8");
             hints.put(EncodeHintType.MARGIN, 1);
 
+            /**
+             * .encode 1.takes String of content.
+             *          2. barcode format in these case it will take qrCode format.
+             *          3. int width and int height
+             */
             BitMatrix bitMatrix = qrCodeWriter.encode(
-                    qrContent, BarcodeFormat.QR_CODE, 400, 400, hints);
+                    qrContent, BarcodeFormat.QR_CODE , 400, 400, hints);
             BufferedImage qrImage = MatrixToImageWriter.toBufferedImage(bitMatrix);
 
             File output = new File("./qrcodes.png");
@@ -73,8 +76,6 @@ public class TotpServiceImpl implements TotpService {
             throw new RuntimeException("QR code generation failed", e);
         }
     }
-
-
 
     @Override
     public boolean isValid(String secretKey, int code) {
